@@ -1,11 +1,8 @@
 package com.scienceminer.nerd.kb;
 
+import com.fasterxml.jackson.core.io.JsonStringEncoder;
+
 import java.io.Serializable;
-
-import com.scienceminer.nerd.kb.db.*;
-import com.scienceminer.nerd.kb.model.*;
-
-import com.fasterxml.jackson.core.io.*;
 
 /**
  * Class for representing and exchanging a semantic statement about an entity.
@@ -125,33 +122,27 @@ public class Statement implements Serializable {
                 Concept concept = null;
                 if (value.startsWith("Q")) {
                     sb.append(", \"value\" : \"" + value + "\"");
-                    concept = UpperKnowledgeBase.getInstance().getConcept(value);                    
+                    concept = UpperKnowledgeBase.getInstance().getConcept(value);
                 } else {
                     sb.append(", \"value\" : " + value);
                     concept = UpperKnowledgeBase.getInstance().getConcept(value.replace("\"", ""));
                 }
 
                 if (concept != null) {
-                    Integer pageId = concept.getPageIdByLang("en");
-                    if (pageId != null) {
-                        LowerKnowledgeBase wikipedia = UpperKnowledgeBase.getInstance().getWikipediaConf("en");
-                        Page page = wikipedia.getPageById(pageId);
-                        if (page != null) {
-                            byte[] encodedValueTitle = encoder.quoteAsUTF8(page.getTitle());
-                            String outputValueTitle = new String(encodedValueTitle); 
-                            sb.append(", \"valueName\" : \"" + outputValueTitle + "\"");
+                    // Hack : use en label instead of title page if exists for valueName
+                    String enLabel = concept.getLabelByLang("en");
+                    if (enLabel != null) {
+                            byte[] encodedValueLabel = encoder.quoteAsUTF8(enLabel);
+                            String outputValueLabel = new String(encodedValueLabel);
+                            sb.append(", \"valueName\" : \"" + outputValueLabel + "\"");
                             done = true;
                         }
-                    }
                 }
-                /*if (!done)
-                    sb.append(", \"value\" : \"" + value + "\"");*/  
+
             } else
                 sb.append(", \"value\" : " + value);   
         }
-
-        sb.append("}");   
-
+        sb.append("}");
         return sb.toString();
     }    
 }

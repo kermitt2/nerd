@@ -2,16 +2,12 @@ package com.scienceminer.nerd.kb.db;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import com.scienceminer.nerd.kb.Property;
 import com.scienceminer.nerd.exceptions.NerdResourceException;
-
+import com.scienceminer.nerd.kb.Property;
 import org.apache.commons.compress.compressors.CompressorInputStream;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.hadoop.record.CsvRecordInput;
-
 import org.fusesource.lmdbjni.Transaction;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PropertyDatabase extends StringRecordDatabase<Property> {
-	private static final Logger logger = LoggerFactory.getLogger(PropertyDatabase.class);	
+	private static final Logger logger = LoggerFactory.getLogger(PropertyDatabase.class);
 
 	public PropertyDatabase(KBEnvironment env) {
 		super(env, DatabaseType.properties);
@@ -52,6 +48,9 @@ public class PropertyDatabase extends StringRecordDatabase<Property> {
 		String line = null;
 		ObjectMapper mapper = new ObjectMapper();
 		List<Property> properties = new ArrayList<Property>();
+		// Hack : fake property to store the english label of every concept
+		// Should probably be TEXT if we want to support all labels and not only the en label
+		properties.add(new Property("P0", "label", Property.ValueType.STRING));
 		while ((line=reader.readLine()) != null) {
 			if (line.length() == 0) continue;
 			if (line.startsWith("[")) continue;

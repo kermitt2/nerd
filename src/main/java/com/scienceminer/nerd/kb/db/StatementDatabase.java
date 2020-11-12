@@ -1,35 +1,22 @@
 package com.scienceminer.nerd.kb.db;
 
-import java.io.*;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.HashMap;
-
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.scienceminer.nerd.exceptions.NerdResourceException;
+import com.scienceminer.nerd.kb.Statement;
+import org.apache.commons.compress.compressors.CompressorInputStream;
+import org.apache.commons.compress.compressors.CompressorStreamFactory;
+import org.apache.hadoop.record.CsvRecordInput;
+import org.fusesource.lmdbjni.Entry;
+import org.fusesource.lmdbjni.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.commons.compress.compressors.*;
-import org.apache.hadoop.record.CsvRecordInput;
-
-import com.scienceminer.nerd.kb.db.*;
-import com.scienceminer.nerd.kb.db.KBDatabase.DatabaseType;
-import com.scienceminer.nerd.utilities.*;
-import com.scienceminer.nerd.kb.*;
-import com.scienceminer.nerd.exceptions.NerdResourceException;
-
-import com.fasterxml.jackson.core.*;
-import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.node.*;
-import com.fasterxml.jackson.annotation.*;
-import com.fasterxml.jackson.core.io.*;
-
-import org.fusesource.lmdbjni.*;
-import static org.fusesource.lmdbjni.Constants.*;
+import java.io.*;
+import java.util.*;
 
 public class StatementDatabase extends StringRecordDatabase<List<Statement>> {
-	private static final Logger logger = LoggerFactory.getLogger(StatementDatabase.class);	
+	private static final Logger logger = LoggerFactory.getLogger(StatementDatabase.class);
 
 	public StatementDatabase(KBUpperEnvironment env, DatabaseType type) {
 		super(env, type);
@@ -138,7 +125,15 @@ public class StatementDatabase extends StringRecordDatabase<List<Statement>> {
 					}
 				}
 			}
-
+			// Hack : fake property to store the english label of every concept
+			JsonNode labelsNode = rootNode.findPath("labels");
+			if ((labelsNode != null) && (!labelsNode.isMissingNode())) {
+				JsonNode enLabelNode = labelsNode.findPath("en");
+				if ((enLabelNode != null) && (!enLabelNode.isMissingNode())) {
+					JsonNode valueNode = enLabelNode.findPath("value");
+					statements.add(new Statement(itemId, "P0", valueNode.textValue()));
+				}
+			}
 			if (statements.size() > 0) {
 				try {
 					db.put(tx, KBEnvironment.serialize(itemId), KBEnvironment.serialize(statements));
@@ -188,7 +183,7 @@ public class StatementDatabase extends StringRecordDatabase<List<Statement>> {
 					nbToAdd = 0;
 					tx = environment.createWriteTransaction();
 					// reset temporary map
-					tmpMap = new HashMap<String, List<Statement>>(); 
+					tmpMap = new HashMap<String, List<Statement>>();
 				} catch(Exception e) {
 					e.printStackTrace();
 				}
@@ -201,8 +196,8 @@ public class StatementDatabase extends StringRecordDatabase<List<Statement>> {
 			//Page p = null;
 			
 			try {
-				String entityId = (String)KBEnvironment.deserialize(keyData);
-				List<Statement> statements = (List<Statement>)KBEnvironment.deserialize(valueData);
+				String entityId = (String) KBEnvironment.deserialize(keyData);
+				List<Statement> statements = (List<Statement>) KBEnvironment.deserialize(valueData);
 				for (Statement statement : statements) {
 					String value = statement.getValue();
 					if ( (value != null) && value.startsWith("Q") ) {

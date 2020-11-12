@@ -1,16 +1,12 @@
 package com.scienceminer.nerd.kb;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.ArrayList;
-
+import com.scienceminer.nerd.kb.db.KBUpperEnvironment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.scienceminer.nerd.kb.db.*;
-import com.scienceminer.nerd.kb.model.Page.PageType;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * An language-independent atomic element of the (N)ERD Knowledge Base.
@@ -36,6 +32,14 @@ public class Concept {
 		return localMap.get(lang); 
 	}
 
+	public String getLabelByLang(String lang) {
+		// Hack : only the en label is supported for the moment
+		if (lang.equals("en")) {
+			Optional<Statement> enLabelSt = env.getDbStatements().retrieve(wikidataId).stream().filter(st -> st.getPropertyId().equals("P0")).findFirst();
+			return enLabelSt.isPresent() ? enLabelSt.get().getValue() : null;
+		}
+		return null;
+	}
 	/**
 	 * Return the list of statements associated to the concept
 	 */
